@@ -210,25 +210,6 @@ svc-estado-eventos/
         └── finish_events.py   # Job fin eventos
 ```
 
-## Troubleshooting
-
-### El scheduler no ejecuta los jobs
-
-Verificar:
-
-- Que el servicio esté corriendo (`GET /`)
-- Los logs del servidor para ver errores
-- La configuración de `SCHEDULER_INTERVAL_SECONDS`
-
-### No se actualizan los eventos
-
-Verificar:
-
-- Que el backend Django esté corriendo en `BACKEND_URL`
-- Los endpoints `/api/events-status/` estén disponibles
-- Los eventos tengan las fechas correctas
-- Los logs del servicio para ver errores específicos
-
 ## Producción
 
 ### Consideraciones
@@ -236,44 +217,6 @@ Verificar:
 1. **No usar reload**: APScheduler no es compatible con el auto-reload de Uvicorn
 2. **Manejo de errores**: Los jobs capturan excepciones y continúan ejecutándose
 3. **Monitoreo**: Usar los logs para monitorear la ejecución
-
-### Docker (opcional)
-
-Si se desea containerizar el servicio, crear un `Dockerfile`:
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
-```
-
-## Licencia
-
-Este servicio es parte del proyecto EvalTech Administrador.
-
-### Docker (opcional)
-
-Si se desea containerizar el servicio, crear un `Dockerfile`:
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
-```
 
 ## Licencia
 
