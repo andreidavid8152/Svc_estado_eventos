@@ -17,7 +17,6 @@ Microservicio FastAPI que actualiza automáticamente los estados de los eventos 
 
 - Python 3.8+
 - Backend Django ejecutándose
-- Token JWT válido de un usuario admin/superadmin
 
 ## Instalación
 
@@ -39,17 +38,8 @@ Editar `.env` con tus valores:
 
 ```env
 BACKEND_URL=http://localhost:8000
-BACKEND_JWT_TOKEN=your_jwt_token_here
 SCHEDULER_INTERVAL_SECONDS=60
 ```
-
-### Obtener el JWT Token
-
-Para obtener un token JWT válido:
-
-1. Iniciar sesión en el backend Django con un usuario admin/superadmin
-2. El token se devuelve en la respuesta del login
-3. Copiar el token y configurarlo en `BACKEND_JWT_TOKEN`
 
 ## Ejecución
 
@@ -169,7 +159,6 @@ Respuesta:
 | Variable                     | Descripción                       | Valor por defecto       |
 | ---------------------------- | --------------------------------- | ----------------------- |
 | `BACKEND_URL`                | URL del backend Django            | `http://localhost:8000` |
-| `BACKEND_JWT_TOKEN`          | Token JWT para autenticación      | -                       |
 | `SCHEDULER_INTERVAL_SECONDS` | Intervalo de ejecución (segundos) | `60`                    |
 | `HOST`                       | Host del servidor FastAPI         | `0.0.0.0`               |
 | `PORT`                       | Puerto del servidor FastAPI       | `8001`                  |
@@ -231,14 +220,6 @@ Verificar:
 - Los logs del servidor para ver errores
 - La configuración de `SCHEDULER_INTERVAL_SECONDS`
 
-### Error de autenticación con el backend
-
-Verificar:
-
-- Que `BACKEND_JWT_TOKEN` esté configurado
-- Que el token sea válido y no haya expirado
-- Que el usuario tenga permisos admin/superadmin
-
 ### No se actualizan los eventos
 
 Verificar:
@@ -254,8 +235,28 @@ Verificar:
 
 1. **No usar reload**: APScheduler no es compatible con el auto-reload de Uvicorn
 2. **Manejo de errores**: Los jobs capturan excepciones y continúan ejecutándose
-3. **Tokens JWT**: Renovar el token antes de que expire
-4. **Monitoreo**: Usar los logs para monitorear la ejecución
+3. **Monitoreo**: Usar los logs para monitorear la ejecución
+
+### Docker (opcional)
+
+Si se desea containerizar el servicio, crear un `Dockerfile`:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+```
+
+## Licencia
+
+Este servicio es parte del proyecto EvalTech Administrador.
 
 ### Docker (opcional)
 
