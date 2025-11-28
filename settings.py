@@ -1,11 +1,12 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field
 
 
 class Settings(BaseSettings):
     """Configuración del servicio de estado de eventos."""
 
-    # URL del backend Django
-    BACKEND_URL: str = "http://localhost:8000"
+    # URL del backend Django (se obtiene de la variable de entorno `BACKEND_URL`)
+    BACKEND_URL: str = Field(env="BACKEND_URL")
 
     # Configuración del scheduler
     SCHEDULER_INTERVAL_SECONDS: int = 60  # Por defecto cada minuto
