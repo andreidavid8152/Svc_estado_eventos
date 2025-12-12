@@ -37,6 +37,16 @@ async def finish_pending_events():
 
             if success:
                 logger.info(f"✓ Evento {event_id} finalizado exitosamente")
+                
+                # Iniciar procesamiento de finalización (unión de videos y análisis)
+                logger.info(f"Iniciando procesamiento de finalización para evento {event_id}")
+                processing_success = await backend_client.process_event_completion(event_id)
+                
+                if processing_success:
+                    logger.info(f"✓ Procesamiento de finalización iniciado para evento {event_id}")
+                else:
+                    logger.warning(f"✗ No se pudo iniciar el procesamiento de finalización para evento {event_id}")
+                    
             else:
                 logger.warning(f"✗ No se pudo finalizar el evento {event_id}")
 

@@ -141,6 +141,53 @@ class BackendAPIClient:
             logger.error(f"Error inesperado al finalizar evento {event_id}: {e}")
             return False
 
+    async def process_event_completion(self, event_id: int) -> bool:
+        """
+        Procesa la finalización de un evento: une videos y ejecuta análisis de comportamiento.
+        
+        Args:
+            event_id: ID del evento que ha finalizado
+            
+        Returns:
+            True si el procesamiento se inició correctamente, False en caso contrario.
+        """
+        try:
+            url = f"{self.base_url}/analysis/process-event-completion/"
+            payload = {"event_id": event_id}
+            
+            async with httpx.AsyncClient(timeout=60) as client:  # Timeout más largo para este proceso
+                response = await client.post(url, json=payload, headers=self.headers)
+                response.raise_for_status()
+                data = response.json()
+                
+                if "message" in data:
+                    logger.info(f"Procesamiento de finalización iniciado para evento {event_id}")
+                    logger.info(f"Total participantes: {data.get('total_participants', 0)}")
+                    logger.info(f"Exitosos: {data.get('successful', 0)}, Fallidos: {data.get('failed', 0)}")
+                    
+                    # Log detalles de participantes que fallaron
+                    if data.get('failed', 0) > 0:
+                        for result in data.get('results', []):
+                            if not result.get('success'):
+                                logger.warning(f"Falló procesamiento para participante {result.get('participant_name')}: {result.get('error')}")
+                    
+                    return True
+                    
+                return False
+                
+        except httpx.HTTPError as e:
+            logger.error(f"Error HTTP al procesar finalización del evento {event_id}: {e}")
+            if hasattr(e, "response") and e.response is not None:
+                try:
+                    error_data = e.response.json()
+                    logger.error(f"Detalle del error: {error_data.get('error', 'Sin detalles')}")
+                except:
+                    pass
+            return False
+        except Exception as e:
+            logger.error(f"Error inesperado al procesar finalización del evento {event_id}: {e}")
+            return False
+
 
 # Singleton del cliente
 backend_client = BackendAPIClient()
