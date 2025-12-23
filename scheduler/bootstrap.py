@@ -32,6 +32,8 @@ def init_scheduler():
         id="process_events",
         name="Procesar eventos (inicio y finalización)",
         replace_existing=True,
+        coalesce=settings.SCHEDULER_COALESCE,
+        misfire_grace_time=settings.SCHEDULER_MISFIRE_GRACE_SECONDS,
         max_instances=1,  # Solo permitir una instancia ejecutándose a la vez
     )
     logger.info(

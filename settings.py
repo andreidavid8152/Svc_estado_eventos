@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     # Configuración del scheduler
     SCHEDULER_INTERVAL_SECONDS: int = 60  # Por defecto cada minuto
+    SCHEDULER_MISFIRE_GRACE_SECONDS: int = 5
+    SCHEDULER_COALESCE: bool = True
 
     # Configuración del servidor
     HOST: str = "0.0.0.0"
