@@ -9,6 +9,8 @@ Microservicio FastAPI que actualiza automáticamente los estados de los eventos 
   - Iniciar eventos programados cuando llega su `start_date`
   - Finalizar eventos en progreso cuando llega su `end_date`
 
+- **Limpieza de eventos expirados**: Job diario que elimina eventos con mas de 182 dias desde `start_date` (solo fecha)
+
 - **Ejecución programada**: Utiliza APScheduler para ejecutar tareas cada minuto (configurable)
 
 - **API REST**: Expone endpoints para monitoreo y health checks
@@ -139,18 +141,27 @@ Respuesta:
 #### Start Events Job
 
 - **Frecuencia**: Cada minuto (configurable)
-- **Acción**:
+- **Accion**:
   1. Consulta `GET /api/events-status/pending-start/`
   2. Para cada evento retornado, llama a `POST /api/events-status/{event_id}/start/`
-  3. Cambia el estado de `programado` → `en_progreso`
+  3. Cambia el estado de `programado` -> `en_progreso`
 
 #### Finish Events Job
 
 - **Frecuencia**: Cada minuto (configurable)
-- **Acción**:
+- **Accion**:
   1. Consulta `GET /api/events-status/pending-finish/`
   2. Para cada evento retornado, llama a `POST /api/events-status/{event_id}/finish/`
-  3. Cambia el estado de `en_progreso` → `completado`
+  3. Cambia el estado de `en_progreso` -> `completado`
+
+#### Cleanup Expired Events Job
+
+- **Frecuencia**: Diario a las 00:00 UTC
+- **Accion**:
+  1. Consulta `GET /api/events-status/expired/`
+  2. Para cada evento retornado, llama a `DELETE /api/events/{event_id}`
+  3. Elimina eventos con mas de 182 dias desde `start_date` (solo fecha)
+  4. Renueva token superadmin con `POST /auth/refresh-token/` (y hace login si expira)
 
 ## Configuración
 
@@ -159,6 +170,9 @@ Respuesta:
 | Variable                     | Descripción                       | Valor por defecto       |
 | ---------------------------- | --------------------------------- | ----------------------- |
 | `BACKEND_URL`                | URL del backend Django            | `http://localhost:8000` |
+| `BACKEND_SUPERADMIN_TOKEN`   | Token superadmin para eliminar eventos | ``                    |
+| `BACKEND_SUPERADMIN_EMAIL`   | Email superadmin para renovar token | ``                    |
+| `BACKEND_SUPERADMIN_PASSWORD`| Password superadmin para renovar token | ``                    |
 | `SCHEDULER_INTERVAL_SECONDS` | Intervalo de ejecución (segundos) | `60`                    |
 | `HOST`                       | Host del servidor FastAPI         | `0.0.0.0`               |
 | `PORT`                       | Puerto del servidor FastAPI       | `8001`                  |

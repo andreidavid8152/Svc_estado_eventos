@@ -1,8 +1,11 @@
 import logging
+from datetime import timezone as dt_timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from settings import settings
 from scheduler.jobs.process_events import process_events_sync
+from scheduler.jobs.cleanup_events import cleanup_expired_events_sync
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,18 @@ def init_scheduler():
     logger.info(
         f"Job 'process_events' programado cada {settings.SCHEDULER_INTERVAL_SECONDS} segundos"
     )
+
+    scheduler.add_job(
+        func=cleanup_expired_events_sync,
+        trigger=CronTrigger(hour=0, minute=0, timezone=dt_timezone.utc),
+        id="cleanup_expired_events",
+        name="Eliminar eventos expirados",
+        replace_existing=True,
+        coalesce=settings.SCHEDULER_COALESCE,
+        misfire_grace_time=settings.SCHEDULER_MISFIRE_GRACE_SECONDS,
+        max_instances=1,
+    )
+    logger.info("Job 'cleanup_expired_events' programado para las 00:00 UTC")
 
     # Iniciar el scheduler
     scheduler.start()

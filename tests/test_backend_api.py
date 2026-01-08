@@ -36,8 +36,10 @@ class StubAsyncClient:
         self.response = response
         self.get_calls = []
         self.post_calls = []
+        self.delete_calls = []
         self.get_exc = get_exc
         self.post_exc = post_exc
+        self.delete_exc = None
 
     async def __aenter__(self):
         return self
@@ -55,6 +57,12 @@ class StubAsyncClient:
         if self.post_exc is not None:
             raise self.post_exc
         self.post_calls.append((url, headers, json))
+        return self.response
+
+    async def delete(self, url, headers=None):
+        if self.delete_exc is not None:
+            raise self.delete_exc
+        self.delete_calls.append((url, headers))
         return self.response
 
 
@@ -104,6 +112,45 @@ class BackendAPIClientTests(unittest.IsolatedAsyncioTestCase):
             result = await client.get_pending_finish_events()
 
         self.assertEqual(result, [])
+
+    async def test_get_expired_events_success(self):
+        client = BackendAPIClient()
+        response = StubResponse(
+            status_code=200, json_data={"results": [{"id": 3}]}
+        )
+        stub_client = StubAsyncClient(response)
+
+        with mock.patch("clients.backend_api.httpx.AsyncClient", return_value=stub_client):
+            result = await client.get_expired_events()
+
+        self.assertEqual(result, [{"id": 3}])
+        self.assertTrue(stub_client.get_calls)
+
+    async def test_login_superadmin_success(self):
+        client = BackendAPIClient()
+        client.superadmin_email = "super@example.com"
+        client.superadmin_password = "secret"
+        response = StubResponse(status_code=200, json_data={"token": "new-token"})
+        stub_client = StubAsyncClient(response)
+
+        with mock.patch("clients.backend_api.httpx.AsyncClient", return_value=stub_client):
+            result = await client.login_superadmin()
+
+        self.assertTrue(result)
+        self.assertEqual(client._token, "new-token")
+        self.assertTrue(stub_client.post_calls)
+
+    async def test_refresh_superadmin_token_success(self):
+        client = BackendAPIClient()
+        client._token = "old-token"
+        response = StubResponse(status_code=200, json_data={"token": "refreshed"})
+        stub_client = StubAsyncClient(response)
+
+        with mock.patch("clients.backend_api.httpx.AsyncClient", return_value=stub_client):
+            result = await client.refresh_superadmin_token()
+
+        self.assertTrue(result)
+        self.assertEqual(client._token, "refreshed")
 
     async def test_start_event_success(self):
         client = BackendAPIClient()
@@ -209,3 +256,14 @@ class BackendAPIClientTests(unittest.IsolatedAsyncioTestCase):
             result = await client.process_event_completion(58)
 
         self.assertFalse(result)
+
+    async def test_delete_event_success(self):
+        client = BackendAPIClient()
+        response = StubResponse(status_code=200, json_data={"success": True})
+        stub_client = StubAsyncClient(response)
+
+        with mock.patch("clients.backend_api.httpx.AsyncClient", return_value=stub_client):
+            result = await client.delete_event(99)
+
+        self.assertTrue(result)
+        self.assertTrue(stub_client.delete_calls)

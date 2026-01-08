@@ -23,11 +23,11 @@ class SchedulerBootstrapTests(unittest.TestCase):
             scheduler = bootstrap.init_scheduler()
 
         self.assertIs(scheduler, fake_scheduler)
-        fake_scheduler.add_job.assert_called_once()
+        self.assertEqual(fake_scheduler.add_job.call_count, 2)
         fake_scheduler.start.assert_called_once()
 
-        call_kwargs = fake_scheduler.add_job.call_args.kwargs
-        self.assertEqual(call_kwargs.get("id"), "process_events")
+        call_ids = {call.kwargs.get("id") for call in fake_scheduler.add_job.call_args_list}
+        self.assertEqual(call_ids, {"process_events", "cleanup_expired_events"})
 
     def test_init_scheduler_returns_existing_instance(self):
         fake_scheduler = mock.Mock()
