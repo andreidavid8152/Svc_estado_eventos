@@ -9,3 +9,9 @@ __pycache__/
 # Environments
 .env
 .venv
+
+# Test/coverage artifacts
+.coverage*
+.pytest_cache/
+coverage.xml
+htmlcov/
