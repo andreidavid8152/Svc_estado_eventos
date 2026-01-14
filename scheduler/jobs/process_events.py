@@ -116,7 +116,7 @@ async def process_events():
     logger.info("-" * 80)
 
     try:
-        result = await backend_client.cleanup_stale_monitoring_by_logs(180)
+        result = await backend_client.cleanup_stale_monitoring_by_logs(60)
         if not result or result.get("success") is False:
             logger.warning("   No se pudo limpiar monitoreos sin logs recientes")
         else:
