@@ -10,6 +10,7 @@ async def process_events():
     Job principal que ejecuta las tareas de eventos de forma secuencial.
     1. Primero inicia eventos programados
     2. Luego finaliza eventos en progreso
+    3. Luego limpia monitoreos sin logs recientes
     """
     logger.info("=" * 80)
     logger.info("INICIANDO PROCESAMIENTO DE EVENTOS")
@@ -19,7 +20,7 @@ async def process_events():
     # PASO 1: Iniciar eventos programados
     # =============================
     logger.info("")
-    logger.info("PASO 1/2: Verificando eventos pendientes de inicio...")
+    logger.info("PASO 1/3: Verificando eventos pendientes de inicio...")
     logger.info("-" * 80)
 
     try:
@@ -51,7 +52,7 @@ async def process_events():
                     logger.warning(f"       No se pudo iniciar el evento {event_id}")
 
         logger.info("-" * 80)
-        logger.info("✓ PASO 1/2 COMPLETADO")
+        logger.info("✓ PASO 1/3 COMPLETADO")
 
     except Exception as e:
         logger.error(f"Error en paso 1 (iniciar eventos): {e}", exc_info=True)
@@ -60,7 +61,7 @@ async def process_events():
     # PASO 2: Finalizar eventos en progreso
     # =============================
     logger.info("")
-    logger.info("PASO 2/2: Verificando eventos pendientes de finalización...")
+    logger.info("PASO 2/3: Verificando eventos pendientes de finalización...")
     logger.info("-" * 80)
 
     try:
@@ -102,10 +103,30 @@ async def process_events():
                     logger.warning(f"       No se pudo finalizar el evento {event_id}")
 
         logger.info("-" * 80)
-        logger.info("✓ PASO 2/2 COMPLETADO")
+        logger.info("✓ PASO 2/3 COMPLETADO")
 
     except Exception as e:
         logger.error(f"Error en paso 2 (finalizar eventos): {e}", exc_info=True)
+
+    # =============================
+    # PASO 3: Limpiar monitoreos sin logs recientes
+    # =============================
+    logger.info("")
+    logger.info("PASO 3/3: Verificando monitoreos sin logs recientes...")
+    logger.info("-" * 80)
+
+    try:
+        result = await backend_client.cleanup_stale_monitoring_by_logs(180)
+        if not result or result.get("success") is False:
+            logger.warning("   No se pudo limpiar monitoreos sin logs recientes")
+        else:
+            stale_count = result.get("stale_count", 0)
+            logger.info(f"   Se limpiaron {stale_count} monitoreo(s) sin logs recientes")
+
+        logger.info("-" * 80)
+        logger.info("V PASO 3/3 COMPLETADO")
+    except Exception as e:
+        logger.error(f"Error en paso 3 (cleanup monitoreo): {e}", exc_info=True)
 
     # =============================
     # Resumen final

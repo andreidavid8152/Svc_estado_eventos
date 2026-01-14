@@ -257,6 +257,27 @@ class BackendAPIClientTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(result)
 
+    async def test_cleanup_stale_monitoring_by_logs_success(self):
+        client = BackendAPIClient()
+        response = StubResponse(status_code=200, json_data={"success": True, "stale_count": 2})
+        stub_client = StubAsyncClient(response)
+
+        with mock.patch.object(client, "ensure_superadmin_token", new=mock.AsyncMock(return_value=True)):
+            with mock.patch("clients.backend_api.httpx.AsyncClient", return_value=stub_client):
+                result = await client.cleanup_stale_monitoring_by_logs(180)
+
+        self.assertEqual(result.get("stale_count"), 2)
+        self.assertTrue(stub_client.post_calls)
+
+    async def test_cleanup_stale_monitoring_by_logs_auth_failure(self):
+        client = BackendAPIClient()
+
+        with mock.patch.object(client, "ensure_superadmin_token", new=mock.AsyncMock(return_value=False)):
+            result = await client.cleanup_stale_monitoring_by_logs(180)
+
+        self.assertEqual(result.get("success"), False)
+        self.assertEqual(result.get("error"), "auth_failed")
+
     async def test_delete_event_success(self):
         client = BackendAPIClient()
         response = StubResponse(status_code=200, json_data={"success": True})

@@ -275,6 +275,38 @@ class BackendAPIClient:
             return False
 
 
+
+    async def cleanup_stale_monitoring_by_logs(self, threshold_seconds: int) -> Dict[str, Any]:
+        """
+        Limpia sesiones de monitoreo sin logs recientes.
+
+        Args:
+            threshold_seconds: Umbral en segundos sin logs.
+
+        Returns:
+            Dict con respuesta del backend o error.
+        """
+        try:
+            token_ok = await self.ensure_superadmin_token()
+            if not token_ok:
+                logger.error("No se pudo obtener token superadmin para cleanup de monitoreo")
+                return {"success": False, "error": "auth_failed"}
+
+            url = f"{self.base_url}/events/api/monitoring/cleanup-stale-logs/"
+            payload = {"threshold_seconds": threshold_seconds}
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(url, json=payload, headers=self._get_headers())
+                response.raise_for_status()
+                data = response.json()
+                return data
+        except httpx.HTTPError as e:
+            logger.error(f"Error HTTP en cleanup de monitoreo: {e}")
+            return {"success": False, "error": "http_error"}
+        except Exception as e:
+            logger.error(f"Error inesperado en cleanup de monitoreo: {e}")
+            return {"success": False, "error": "unexpected_error"}
+
     async def delete_event(self, event_id: int) -> bool:
         """
         Elimina un evento en el backend.
