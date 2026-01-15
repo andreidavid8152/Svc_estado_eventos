@@ -7,7 +7,7 @@ import urllib.request
 
 
 DEFAULT_BASE_URL = os.getenv(
-    "CRONJOB_URL", "https://backend-production-b180.up.railway.app"
+    "CRONJOB_URL", "https://svcestadoeventos-production.up.railway.app"
 )
 DEFAULT_PATH = os.getenv("CRONJOB_PATH", "/health")
 
