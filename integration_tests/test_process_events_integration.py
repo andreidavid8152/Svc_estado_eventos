@@ -4,10 +4,14 @@ import unittest
 from unittest import mock
 
 import httpx
+import logging
 
 os.environ.setdefault("BACKEND_URL", "http://backend.test")
+os.environ.setdefault("BACKEND_SUPERADMIN_EMAIL", "superadmin@example.com")
+os.environ.setdefault("BACKEND_SUPERADMIN_PASSWORD", "superadmin")
 
 from scheduler.jobs.process_events import process_events  # noqa: E402
+from clients.backend_api import backend_client  # noqa: E402
 
 
 BASE_URL = "http://backend.test"
@@ -57,6 +61,18 @@ class RecordingHandler:
                 request=request,
             )
 
+        if request.method == "POST" and path.endswith("/auth/login/"):
+            return httpx.Response(
+                200, json={"token": "test-token"}, request=request
+            )
+
+        if request.method == "POST" and path.endswith(
+            "/events/api/monitoring/cleanup-stale-logs/"
+        ):
+            return httpx.Response(
+                200, json={"success": True, "stale_count": 0}, request=request
+            )
+
         return httpx.Response(404, json={"error": "not found"}, request=request)
 
 
@@ -73,6 +89,13 @@ def build_async_client(transport):
 
 
 class ProcessEventsIntegrationTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
+        backend_client._token = ""
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+
     async def test_process_events_full_flow(self):
         handler = RecordingHandler(
             pending_start=[
@@ -97,10 +120,17 @@ class ProcessEventsIntegrationTests(unittest.IsolatedAsyncioTestCase):
             "/events/api/events-status/pending-finish/",
             "/events/api/events-status/201/finish/",
             "/analysis/process-event-completion/",
+            "/auth/login/",
+            "/events/api/monitoring/cleanup-stale-logs/",
         ]
         self.assertEqual(paths, expected_paths)
 
-        completion_payload = json.loads(handler.calls[-1][2].decode("utf-8") or "{}")
+        completion_calls = [
+            call for call in handler.calls
+            if call[1] == "/analysis/process-event-completion/"
+        ]
+        self.assertEqual(len(completion_calls), 1)
+        completion_payload = json.loads(completion_calls[0][2].decode("utf-8") or "{}")
         self.assertEqual(completion_payload.get("event_id"), 201)
 
     async def test_process_events_finish_failure_skips_processing(self):
